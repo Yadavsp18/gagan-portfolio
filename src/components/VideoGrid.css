@@ -1,0 +1,29 @@
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  width: 100%;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .video-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+}

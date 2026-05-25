@@ -1,0 +1,38 @@
+.work-card {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--dark3);
+}
+
+.work-card .card-thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  transition: opacity 0.4s ease;
+}
+
+.work-card .card-thumb-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border: none;
+  pointer-events: none;
+}
+
+/* Show video on hover */
+.work-card:hover .card-thumb-img {
+  opacity: 0;
+}
+
+.work-card:hover .card-thumb-iframe {
+  opacity: 1;
+  pointer-events: auto;
+}
