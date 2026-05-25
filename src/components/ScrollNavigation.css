@@ -32,3 +32,15 @@
 .scroll-button:active {
   transform: scale(0.95);
 }
+
+@media (max-width: 520px) {
+  .scroll-navigation {
+    right: 18px;
+    bottom: 18px;
+  }
+
+  .scroll-button {
+    width: 44px;
+    height: 44px;
+  }
+}
