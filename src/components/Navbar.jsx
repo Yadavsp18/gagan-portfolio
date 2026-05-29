@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import './Navbar.css';
 
-const Navbar = () => {
+const Navbar = ({ theme, toggleTheme }) => {
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
 
@@ -32,7 +33,9 @@ const Navbar = () => {
   const scrollToSection = (id) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const navHeight = document.querySelector('.navbar')?.offsetHeight || 0;
+      const targetTop = element.getBoundingClientRect().top + window.scrollY - navHeight - 8;
+      window.scrollTo({ top: targetTop, behavior: 'smooth' });
     }
   };
 
@@ -40,6 +43,7 @@ const Navbar = () => {
     { id: 'about', label: 'About' },
     { id: 'work', label: 'Work' },
     { id: 'services', label: 'Services' },
+    { id: 'testimonials', label: 'Feedback' },
     { id: 'contact', label: 'Contact' }
   ];
 
@@ -61,6 +65,14 @@ const Navbar = () => {
             </li>
           ))}
         </ul>
+        <button
+          className="theme-toggle"
+          type="button"
+          onClick={toggleTheme}
+          aria-label="Toggle light and dark theme"
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </div>
     </nav>
   );

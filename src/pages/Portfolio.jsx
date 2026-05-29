@@ -5,7 +5,9 @@ import VideoModal from '../components/VideoModal';
 import { getDirectVideoUrl, getYouTubeVideoId } from '../utils/videoUtils';
 import './Portfolio.css';
 
-const VIDEOS_PER_PAGE = 6;
+const VIDEOS_PER_PAGE = 3;
+const MOBILE_VIDEOS_PER_PAGE = 2;
+const PAGE_TRANSITION_MS = 520;
 
 const HoverVideo = ({ previewUrl, thumbnailUrl, title, isPlaying }) => {
   const videoRef = useRef(null);
@@ -112,17 +114,36 @@ const VideoCard = ({ video, index, onOpen }) => {
 const Portfolio = () => {
   const { videos } = useVideos();
   const [currentPage, setCurrentPage] = useState(1);
+  const [videosPerPage, setVideosPerPage] = useState(VIDEOS_PER_PAGE);
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [pageDirection, setPageDirection] = useState('next');
+  const [transitionPage, setTransitionPage] = useState(null);
   const touchStartX = useRef(null);
+  const transitionTimer = useRef(null);
   const projectCount = videos.length;
-  const totalPages = Math.max(1, Math.ceil(videos.length / VIDEOS_PER_PAGE));
-  const pageStart = (currentPage - 1) * VIDEOS_PER_PAGE;
+  const totalPages = Math.max(1, Math.ceil(videos.length / videosPerPage));
+  const activePage = transitionPage || currentPage;
+  const isPageTransitioning = transitionPage !== null;
+  const pageStart = (currentPage - 1) * videosPerPage;
+  const transitionPageStart = transitionPage ? (transitionPage - 1) * videosPerPage : 0;
 
-  const visibleVideos = videos.slice(pageStart, pageStart + VIDEOS_PER_PAGE);
+  const visibleVideos = videos.slice(pageStart, pageStart + videosPerPage);
+  const transitionVideos = transitionPage
+    ? videos.slice(transitionPageStart, transitionPageStart + videosPerPage)
+    : [];
 
   const goToPage = (page) => {
     const nextPage = Math.min(Math.max(page, 1), totalPages);
-    setCurrentPage(nextPage);
+    if (nextPage === currentPage || isPageTransitioning) return;
+
+    setPageDirection(nextPage > currentPage ? 'next' : 'prev');
+    setTransitionPage(nextPage);
+
+    window.clearTimeout(transitionTimer.current);
+    transitionTimer.current = window.setTimeout(() => {
+      setCurrentPage(nextPage);
+      setTransitionPage(null);
+    }, PAGE_TRANSITION_MS);
   };
 
   const handleTouchStart = (event) => {
@@ -138,9 +159,9 @@ const Portfolio = () => {
 
     if (Math.abs(difference) < 50) return;
     if (difference > 0) {
-      goToPage(currentPage + 1);
+      goToPage(activePage + 1);
     } else {
-      goToPage(currentPage - 1);
+      goToPage(activePage - 1);
     }
   };
 
@@ -151,6 +172,28 @@ const Portfolio = () => {
   }, [currentPage, totalPages]);
 
   useEffect(() => {
+    return () => {
+      window.clearTimeout(transitionTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateVideosPerPage = () => {
+      setVideosPerPage(window.innerWidth <= 640 ? MOBILE_VIDEOS_PER_PAGE : VIDEOS_PER_PAGE);
+    };
+
+    updateVideosPerPage();
+    window.addEventListener('resize', updateVideosPerPage);
+
+    return () => {
+      window.removeEventListener('resize', updateVideosPerPage);
+    };
+  }, []);
+
+  useEffect(() => {
+    /*
+    Custom cursor logic can be restored later.
+
     const cursor = document.getElementById('cursor');
     const ring = document.getElementById('cursor-ring');
     let mx = 0;
@@ -188,6 +231,7 @@ const Portfolio = () => {
       el.addEventListener('mouseenter', addHover);
       el.addEventListener('mouseleave', removeHover);
     });
+    */
 
     const reveals = document.querySelectorAll('.reveal');
     const revealObs = new IntersectionObserver((entries) => {
@@ -200,21 +244,34 @@ const Portfolio = () => {
     }, { threshold: 0.12 });
     reveals.forEach((el) => revealObs.observe(el));
 
+    const sections = document.querySelectorAll('.page-section');
+    const sectionObs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('section-visible');
+        }
+      });
+    }, { threshold: 0.18, rootMargin: '-12% 0px -18% 0px' });
+    sections.forEach((el) => sectionObs.observe(el));
+
     return () => {
+      /*
       document.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationFrame);
       hoverables.forEach((el) => {
         el.removeEventListener('mouseenter', addHover);
         el.removeEventListener('mouseleave', removeHover);
       });
+      */
       revealObs.disconnect();
+      sectionObs.disconnect();
       document.body.classList.remove('hovering');
     };
   }, [currentPage, visibleVideos.length]);
 
   return (
     <div className="portfolio-page">
-      <section id="hero" className="hero-section">
+      <section id="hero" className="hero-section page-section section-visible">
         <div className="hero-label">Professional Video Editor</div>
 
         <h1 className="hero-title">
@@ -234,7 +291,7 @@ const Portfolio = () => {
         <div className="hero-scroll">Scroll</div>
       </section>
 
-      <section id="about" className="about-section">
+      <section id="about" className="about-section page-section">
         <div className="about-visual reveal">
           <div className="about-img-frame">
             <img src="/profile.jpeg" alt="Gagan - Video Editor" className="profile-image" />
@@ -263,10 +320,10 @@ const Portfolio = () => {
         </div>
       </section>
 
-      <section id="work" className="work-section">
+      <section id="work" className="work-section page-section">
         <div className="work-header reveal">
           <div>
-            <div className="section-tag">Portfolio</div>
+            <div className="section-tag">Work I Have Done</div>
             <h2 className="section-title">Featured <em>Edits</em></h2>
           </div>
           <div className="work-count">
@@ -275,10 +332,20 @@ const Portfolio = () => {
           </div>
         </div>
 
-        <div className="work-grid" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-          {visibleVideos.map((video, index) => (
-            <VideoCard key={video.id} video={video} index={index} onOpen={setSelectedVideo} />
-          ))}
+        <div className={`work-stage ${isPageTransitioning ? 'is-moving' : ''}`} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+          <div className={`work-grid ${isPageTransitioning ? `is-exiting exit-${pageDirection}` : ''}`}>
+            {visibleVideos.map((video, index) => (
+              <VideoCard key={video.id} video={video} index={index} onOpen={setSelectedVideo} />
+            ))}
+          </div>
+
+          {isPageTransitioning && (
+            <div className={`work-grid is-entering enter-${pageDirection}`}>
+              {transitionVideos.map((video, index) => (
+                <VideoCard key={video.id} video={video} index={index} onOpen={setSelectedVideo} />
+              ))}
+            </div>
+          )}
         </div>
 
         {totalPages > 1 && (
@@ -286,8 +353,8 @@ const Portfolio = () => {
             <button
               className="pagination-btn"
               type="button"
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
+              onClick={() => goToPage(activePage - 1)}
+              disabled={activePage === 1 || isPageTransitioning}
               aria-label="Previous videos"
             >
               <ChevronLeft size={18} />
@@ -299,8 +366,9 @@ const Portfolio = () => {
                   <button
                     key={page}
                     type="button"
-                    className={currentPage === page ? 'active' : ''}
+                    className={activePage === page ? 'active' : ''}
                     onClick={() => goToPage(page)}
+                    disabled={isPageTransitioning}
                     aria-label={`Go to video page ${page}`}
                   >
                     {page}
@@ -311,8 +379,8 @@ const Portfolio = () => {
             <button
               className="pagination-btn"
               type="button"
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              onClick={() => goToPage(activePage + 1)}
+              disabled={activePage === totalPages || isPageTransitioning}
               aria-label="Next videos"
             >
               <ChevronRight size={18} />
@@ -321,7 +389,7 @@ const Portfolio = () => {
         )}
       </section>
 
-      <section id="services" className="services-section">
+      <section id="services" className="services-section page-section">
         <div className="services-intro">
           <div className="section-tag reveal">What I Do</div>
           <h2 className="section-title reveal reveal-delay-1">Editing <em>Services</em></h2>
@@ -356,7 +424,7 @@ const Portfolio = () => {
         </div>
       </section>
 
-      <section id="testimonials" className="testimonials-section">
+      <section id="testimonials" className="testimonials-section page-section">
         <div className="section-tag reveal">Feedback</div>
         <h2 className="section-title reveal reveal-delay-1">Client <em>Reviews</em></h2>
         <div className="testimonials-grid">
@@ -364,7 +432,7 @@ const Portfolio = () => {
             <span className="quote-mark">&ldquo;</span>
             <p className="testimonial-text">The edit was clean, fast, and exactly what the campaign needed. The pacing made the product feel premium immediately.</p>
             <div className="testimonial-author">
-              <div className="author-avatar">JM</div>
+              <div className="author-avatar">BP</div>
               <div>
                 <div className="author-name">Blen Pinto</div>
                 <div className="author-role">Maneging Director B Hive</div>
@@ -375,7 +443,7 @@ const Portfolio = () => {
             <span className="quote-mark">&ldquo;</span>
             <p className="testimonial-text">Great attention to detail and a very smooth delivery. The final reel looked polished without losing the original energy.</p>
             <div className="testimonial-author">
-              <div className="author-avatar">SK</div>
+              <div className="author-avatar">B</div>
               <div>
                 <div className="author-name">Balaji</div>
                 <div className="author-role">Fiverr Client</div>
@@ -386,7 +454,7 @@ const Portfolio = () => {
             <span className="quote-mark">&ldquo;</span>
             <p className="testimonial-text">Turned hours of raw footage into a tight promo that captured our brand. The sound design really tied everything together.</p>
             <div className="testimonial-author">
-              <div className="author-avatar">AR</div>
+              <div className="author-avatar">R</div>
               <div>
                 <div className="author-name">Rajiv</div>
                 <div className="author-role">Marketing Manager</div>
@@ -396,7 +464,7 @@ const Portfolio = () => {
         </div>
       </section>
 
-      <section id="contact" className="contact-section">
+      <section id="contact" className="contact-section page-section">
         <div className="contact-content">
           <div className="contact-copy">
             <div className="section-tag reveal">Get in Touch</div>
@@ -417,17 +485,17 @@ const Portfolio = () => {
               <span className="link-value">Available Worldwide - Remote Friendly</span>
             </div>
           </div>
+
+          <footer className="footer contact-footer">
+            <div className="footer-copy">Copyright {new Date().getFullYear()} Gagan. All rights reserved.</div>
+            <ul className="footer-socials">
+              <li><a href="https://youtube.com" target="_blank" rel="noopener noreferrer">YouTube</a></li>
+              <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+              <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+            </ul>
+          </footer>
         </div>
       </section>
-
-      <footer className="footer">
-        <div className="footer-copy">Copyright {new Date().getFullYear()} Gagan. All rights reserved.</div>
-        <ul className="footer-socials">
-          <li><a href="https://youtube.com" target="_blank" rel="noopener noreferrer">YouTube</a></li>
-          <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
-          <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a></li>
-        </ul>
-      </footer>
 
       <VideoModal
         isOpen={Boolean(selectedVideo)}

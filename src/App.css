@@ -30,10 +30,40 @@ body {
   background-color: var(--dark);
   color: var(--text);
   line-height: 1.6;
-  cursor: none;
+  /* Custom cursor can be restored later. */
+  /* cursor: none; */
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body.light-theme {
+  --gold: #c98500;
+  --gold-light: #e0a100;
+  --gold-dim: rgba(201, 133, 0, 0.16);
+  --dark: #f7f7f7;
+  --dark2: #efefef;
+  --dark3: #dedede;
+  --dark4: #c8c8c8;
+  --text: #131313;
+  --muted: #5f5f5f;
+  --white: #101010;
+  background-color: var(--dark);
+  color: var(--text);
+}
+
+body.light-theme .navbar {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom-color: rgba(201, 133, 0, 0.22);
+}
+
+body.light-theme .navbar-links button {
+  color: var(--muted);
+}
+
+body.light-theme .navbar-links button:hover,
+body.light-theme .navbar-links button.active {
+  color: var(--gold);
 }
 
 button,
@@ -56,7 +86,7 @@ button {
   flex: 1;
 }
 
-/* Custom Cursor */
+/* Custom Cursor - commented for now, can be restored later.
 #cursor {
   width: 10px;
   height: 10px;
@@ -96,6 +126,7 @@ body.hovering #cursor-ring {
   height: 60px;
   opacity: 0.3;
 }
+*/
 
 /* Grain overlay */
 body::after {
@@ -144,7 +175,7 @@ body::after {
 .reveal-delay-4 { transition-delay: 0.4s; }
 .reveal-delay-5 { transition-delay: 0.5s; }
 
-/* Animations */
+/* ABOUTnimations */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
@@ -186,6 +217,19 @@ body::after {
   z-index: -2;
 }
 
+body.light-theme .global-bg {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(201, 133, 0, 0.14), transparent 28%),
+    linear-gradient(135deg, #fdfdfd 0%, #f4f4f4 52%, #ebebeb 100%);
+}
+
+body.light-theme .global-reel {
+  opacity: 0.09;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(201, 133, 0, 0.045) 2px, rgba(201, 133, 0, 0.045) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,0,0,0.02) 40px, rgba(0,0,0,0.02) 41px);
+}
+
 .global-reel {
   position: fixed;
   inset: 0;
@@ -214,9 +258,14 @@ body::after {
   animation: scan 6s ease-in-out infinite;
 }
 
+body.light-theme .global-scan-line {
+  background: rgba(201, 133, 0, 0.18);
+}
+
 .global-scan-line:nth-child(2) { animation-delay: 2s; }
 .global-scan-line:nth-child(3) { animation-delay: 4s; }
 
+/* Custom cursor mobile fallback - commented for now.
 @media (pointer: coarse) {
   body {
     cursor: auto;
@@ -227,3 +276,4 @@ body::after {
     display: none;
   }
 }
+*/
